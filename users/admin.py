@@ -23,6 +23,14 @@ class UsuarioAdmin(BaseUserAdmin):
          ),
     )
 
+    def save_model(self, request, obj, form, change):
+
+        if obj.rol and obj.rol.nombre.lower() == 'Administrador':
+            obj.is_staff = True
+        else:
+            obj.is_staff = False
+        super().save_model(request, obj, form, change)
+
 @admin.register(Rol)
 class RolAdmin(admin.ModelAdmin):
     list_display = ('id', 'nombre')
