@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class Product(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
@@ -7,6 +8,13 @@ class Product(models.Model):
     stock = models.PositiveIntegerField()
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if self.stock <= 0:
+            self.is_available = False
+        else:
+            self.is_available = True
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
