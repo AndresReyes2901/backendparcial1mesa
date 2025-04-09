@@ -31,6 +31,8 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
+CSRF_TRUSTED_ORIGINS = ['https://backenddjango-production-c48c.up.railway.app']
+
 # Application definition
 
 INSTALLED_APPS = [
