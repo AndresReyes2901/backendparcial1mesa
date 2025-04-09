@@ -43,6 +43,7 @@ User = get_user_model()
 
 
 class CustomPasswordResetView(GenericAPIView):
+    permission_classes = [AllowAny]
     def post(self, request, *args, **kwargs):
         email = request.data.get('email')
         if not email:
