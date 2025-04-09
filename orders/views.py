@@ -135,12 +135,12 @@ class StripeWebhookView(APIView):
             # Invalid signature
             return Response(status=400)
 
-        # Handle the checkout.session.completed event
+
         if event['type'] == 'checkout.session.completed':
             session = event['data']['object']
             user_id = session['metadata']['user_id']
 
-            # Crear orden real en DB
+
             cart = get_object_or_404(Cart, user_id=user_id)
 
             order = Order.objects.create(client=cart.user, status="pending")
@@ -151,6 +151,6 @@ class StripeWebhookView(APIView):
                     quantity=item.quantity,
                 )
 
-            cart.items.all().delete()  # Vaciar carrito
+            cart.items.all().delete()
 
         return Response(status=200)
