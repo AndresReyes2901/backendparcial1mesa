@@ -1,8 +1,10 @@
+from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from rest_framework import viewsets, status
+from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from django.conf import settings
@@ -10,6 +12,8 @@ from .models import Rol, Usuario
 from .serializers import RolSerializer, UsuarioSerializer
 from .permissions import IsStaffOrSuperUser
 from rest_framework.response import Response
+
+from .utils import send_resend_email
 
 
 class RolViewSet(viewsets.ModelViewSet):
@@ -35,34 +39,36 @@ class LogoutView(APIView):
             return Response({"detail": "Error al cerrar sesión."}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class CustomPasswordResetView(APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        email = request.data.get('correo')
+User=get_user_model()
+class CustomPasswordResetView(GenericAPIView):
+    def post(self, request, *args, **kwargs):
+        email = request.data.get('email')
         if not email:
-            return Response({"error": "Email es requerido."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Debes proporcionar un correo electrónico.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            user = Usuario.objects.get(correo=email)
-        except Usuario.DoesNotExist:
-            return Response({"error": "Usuario no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+            user = User.objects.get(correo=email)
+        except User.DoesNotExist:
+            return Response({'error': 'Usuario no encontrado con ese correo.'}, status=status.HTTP_404_NOT_FOUND)
 
         token = default_token_generator.make_token(user)
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        uid = user.pk
 
-        reset_url = f"https://backenddjango-production-c48c.up.railway.app/api/reset-password-confirm/{uid}/{token}/"
+        # Armamos la URL para resetear contraseña
+        reset_url = f"{request.scheme}://{request.get_host()}/reset-password/{uid}/{token}"
 
-        send_mail(
-            subject="Recuperación de contraseña",
-            message=f"Para recuperar tu contraseña, haz click aquí: {reset_url}",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.correo],
-            fail_silently=False,
-        )
+        # Email personalizado
+        subject = "Recuperación de Contraseña"
+        html_content = f"""
+            <p>Hola {user.nombre},</p>
+            <p>Has solicitado restablecer tu contraseña. Haz click en el siguiente enlace:</p>
+            <a href="{reset_url}">Restablecer contraseña</a>
+            <p>Si no solicitaste este correo, puedes ignorarlo.</p>
+        """
 
-        return Response({"detail": "Correo de recuperación enviado."}, status=status.HTTP_200_OK)
+        send_resend_email(email, subject, html_content)
 
+        return Response({'message': 'Correo de recuperación enviado exitosamente.'}, status=status.HTTP_200_OK)
 
 class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
