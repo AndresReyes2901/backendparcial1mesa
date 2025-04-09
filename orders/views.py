@@ -129,10 +129,10 @@ class StripeWebhookView(APIView):
                 payload, sig_header, endpoint_secret
             )
         except ValueError as e:
-            # Invalid payload
+
             return Response(status=400)
         except stripe.error.SignatureVerificationError as e:
-            # Invalid signature
+
             return Response(status=400)
 
 
