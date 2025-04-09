@@ -88,11 +88,11 @@ WSGI_APPLICATION = 'SmartCartBackend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'ballast.proxy.rlwy.net',
-        'USER': 'postgres',
-        'PASSWORD': 'pkcsUoREWyxMwjGADIHFrfAurlzmXkqV',
-        'HOST': 'ballast.proxy.rlwy.net',
-        'PORT': '12855',
+        'NAME': os.getenv('PGDATABASE'),
+        'USER': os.getenv('PGUSER'),
+        'PASSWORD': os.getenv('PGPASSWORD'),
+        'HOST': os.getenv('PGHOST'),
+        'PORT': os.getenv('PGPORT'),
     }
 }
 
