@@ -1,12 +1,12 @@
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
-from users.views import RolViewSet, UsuarioViewSet, CustomPasswordResetView
+from users.views import RolViewSet, UsuarioViewSet, CustomPasswordResetView, LogoutView, PasswordResetConfirmView, \
+    RegisterClienteView, RegisterDeliveryView
 from products.views import ProductViewSet
-from orders.views import OrderViewSet, OrderItemViewSet, CartViewSet, CartItemViewSet, CheckoutViewSet, StripeWebhookView
+from orders.views import OrderViewSet, OrderItemViewSet, CartViewSet, CartItemViewSet, CheckoutViewSet, \
+    StripeWebhookView
 from rest_framework.authtoken.views import obtain_auth_token
-from users.views import LogoutView
-from users.views import PasswordResetConfirmView
 from django.contrib.auth import views as auth_views
 
 router = routers.DefaultRouter()
@@ -26,6 +26,8 @@ urlpatterns = [
     path('api/', include(router.urls)),
     path('api-token-auth/', obtain_auth_token, name='api_token_auth'),
     path('api/logout/', LogoutView.as_view(), name='api_logout'),
+    path('api/register-cliente/', RegisterClienteView.as_view(), name='register_cliente'),
+    path('api/register-delivery/', RegisterDeliveryView.as_view(), name='register_delivery'),
     path('api/password-reset/', CustomPasswordResetView.as_view(), name='custom_password_reset'),
     path('api/reset-password-confirm/<uidb64>/<token>/', PasswordResetConfirmView.as_view(),
          name='password_reset_confirm'),

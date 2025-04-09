@@ -51,7 +51,7 @@ class CustomPasswordResetView(APIView):
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
 
-        reset_url = f"http://127.0.0.1:8000/api/reset-password-confirm/{uid}/{token}/"
+        reset_url = f"https://backenddjango-production-c48c.up.railway.app/api/reset-password-confirm/{uid}/{token}/"
 
         send_mail(
             subject="Recuperación de contraseña",
@@ -88,3 +88,29 @@ class PasswordResetConfirmView(APIView):
 
         except (TypeError, ValueError, OverflowError, Usuario.DoesNotExist):
             return Response({"error": "Link inválido."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class RegisterClienteView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        data = request.data.copy()
+        data['rol'] = Rol.objects.get(nombre='Cliente').id
+        serializer = UsuarioSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"detail": "Cliente registrado exitosamente."}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class RegisterDeliveryView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        data = request.data.copy()
+        data['rol'] = Rol.objects.get(nombre='Delivery').id
+        serializer = UsuarioSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"detail": "Delivery registrado exitosamente."}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
