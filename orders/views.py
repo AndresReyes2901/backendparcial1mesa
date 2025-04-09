@@ -121,7 +121,7 @@ class StripeWebhookView(APIView):
     def post(self, request, *args, **kwargs):
         payload = request.body
         sig_header = request.META['HTTP_STRIPE_SIGNATURE']
-        endpoint_secret = settings.STRIPE_WEBHOOK_SECRET  # Agrega esta variable a settings.py
+        endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
         event = None
 
         try:
