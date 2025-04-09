@@ -4,11 +4,11 @@ from django.conf import settings
 def send_resend_email(to_email, subject, html_content):
     url = "https://api.resend.com/emails"
     headers = {
-        "Authorization": f"Bearer {settings.RESEND_API_KEY}",
+        "Authorization": f"Bearer {settings.EMAIL_HOST_PASSWORD}",
         "Content-Type": "application/json"
     }
     data = {
-        "from": settings.RESEND_FROM_EMAIL,
+        "from": settings.DEFAULT_FROM_EMAIL,
         "to": [to_email],
         "subject": subject,
         "html": html_content

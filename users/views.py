@@ -39,7 +39,9 @@ class LogoutView(APIView):
             return Response({"detail": "Error al cerrar sesión."}, status=status.HTTP_400_BAD_REQUEST)
 
 
-User=get_user_model()
+User = get_user_model()
+
+
 class CustomPasswordResetView(GenericAPIView):
     def post(self, request, *args, **kwargs):
         email = request.data.get('email')
@@ -54,10 +56,8 @@ class CustomPasswordResetView(GenericAPIView):
         token = default_token_generator.make_token(user)
         uid = user.pk
 
-        # Armamos la URL para resetear contraseña
         reset_url = f"{request.scheme}://{request.get_host()}/reset-password/{uid}/{token}"
 
-        # Email personalizado
         subject = "Recuperación de Contraseña"
         html_content = f"""
             <p>Hola {user.nombre},</p>
@@ -69,6 +69,7 @@ class CustomPasswordResetView(GenericAPIView):
         send_resend_email(email, subject, html_content)
 
         return Response({'message': 'Correo de recuperación enviado exitosamente.'}, status=status.HTTP_200_OK)
+
 
 class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
