@@ -61,7 +61,7 @@ class OrderItemViewSet(viewsets.ModelViewSet):
 
 class CartViewSet(viewsets.ModelViewSet):
     serializer_class = CartSerializer
-    permission_classes = [IsOwnerOrAdminOrAssignedDelivery]
+    permission_classes = [IsCartOwner]
     filter_backends = [filters.SearchFilter]
     search_fields = ['client__correo']
 
