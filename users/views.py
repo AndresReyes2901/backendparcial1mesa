@@ -58,7 +58,8 @@ class CustomPasswordResetView(GenericAPIView):
         token = default_token_generator.make_token(user)
         uid = user.pk
 
-        reset_url = f"{request.scheme}://{request.get_host()}/reset-password/{uid}/{token}"
+        domain = "https://backenddjango-production-c48c.up.railway.app"
+        reset_url = f"{domain}/reset-password/{uid}/{token}"
 
         subject = "Recuperación de Contraseña"
         html_content = f"""
