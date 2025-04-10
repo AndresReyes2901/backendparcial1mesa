@@ -26,7 +26,7 @@ class ProductAdmin(admin.ModelAdmin):
         if obj.stock < 6:
             color = 'red'
         else:
-            color = 'white'
+            color = 'black'
         return format_html('<span style="color: {};">{}</span>', color, obj.stock)
 
     highlight_stock.short_description = 'Stock'
