@@ -25,19 +25,18 @@ class CartItemSerializer(serializers.ModelSerializer):
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True)
-    user = serializers.PrimaryKeyRelatedField(read_only=True)
+
     class Meta:
         model = Cart
-        fields = ['id', 'user', 'items','total_price']
-        read_only_fields = ('user',)
+        fields = ['id', 'items', 'total_price','quantity']
 
     def create(self, validated_data):
         items_data = validated_data.pop('items')
-        cart = Cart.objects.create(user=self.context['request'].user)
+        user = self.context['request'].user
+        cart = Cart.objects.create(user=user)
         for item_data in items_data:
             CartItem.objects.create(cart=cart, **item_data)
         return cart
-
 
 class OrderSerializer(serializers.ModelSerializer):
     client_email = serializers.EmailField(source='client.correo', read_only=True)
