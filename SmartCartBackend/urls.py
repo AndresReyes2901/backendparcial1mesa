@@ -12,7 +12,7 @@ from django.contrib.auth import views as auth_views
 router = routers.DefaultRouter()
 router.register(r'roles', RolViewSet)
 router.register(r'users', UsuarioViewSet)
-router.register(r'products', ProductViewSet)
+router.register(r'products', ProductViewSet,basename='product')
 router.register(r'orders', OrderViewSet, basename='order')
 router.register(r'order-items', OrderItemViewSet, basename='orderitem')
 router.register(r'cart', CartViewSet, basename="cart")
