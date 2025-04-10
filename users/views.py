@@ -66,9 +66,10 @@ class CustomPasswordResetView(GenericAPIView):
             <p>Si no solicitaste este correo, puedes ignorarlo.</p>
         """
 
-        send_gmail_email(email, subject, html_content)
-
-        return Response({'message': 'Correo de recuperación enviado exitosamente.'}, status=status.HTTP_200_OK)
+        try:
+            send_gmail_email(email, subject, html_content)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class PasswordResetConfirmView(APIView):
