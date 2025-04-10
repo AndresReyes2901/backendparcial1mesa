@@ -24,18 +24,23 @@ class CartItemSerializer(serializers.ModelSerializer):
         fields = ('id', 'product', 'product_name', 'quantity')
 
 class CartSerializer(serializers.ModelSerializer):
-    items = CartItemSerializer(many=True)
+    items = CartItemSerializer(many=True, required=False)
 
     class Meta:
         model = Cart
-        fields = ['id', 'items','total_price']
+        fields = ('id', 'user', 'items','total_price')
+        read_only_fields = ('user',)
 
     def create(self, validated_data):
-        items_data = validated_data.pop('items')
-        user = self.context['request'].user
+        items_data = validated_data.pop('items', [])
+        request = self.context.get('request')
+        user = request.user if request else None
+
         cart = Cart.objects.create(user=user)
+
         for item_data in items_data:
             CartItem.objects.create(cart=cart, **item_data)
+
         return cart
 
 class OrderSerializer(serializers.ModelSerializer):
