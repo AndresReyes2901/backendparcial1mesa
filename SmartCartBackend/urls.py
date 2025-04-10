@@ -30,5 +30,5 @@ urlpatterns = [
     path('api/reset-password-confirm/<uid>/<token>/', PasswordResetConfirmView.as_view(),
          name='password_reset_confirm'),
     path('api/checkout/', CheckoutView.as_view(), name='checkout'),
-    path('api/stripe-webhook/', StripeWebhookView.as_view(), name='stripe-webhook'),
+    path('api/stripe/webhook/', StripeWebhookView.as_view(), name='stripe-webhook'),
 ]
