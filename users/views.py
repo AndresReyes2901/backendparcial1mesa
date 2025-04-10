@@ -12,8 +12,7 @@ from .models import Rol, Usuario
 from .serializers import RolSerializer, UsuarioSerializer
 from .permissions import IsStaffOrSuperUser
 from rest_framework.response import Response
-
-from .utils import send_resend_email
+from .utils import send_gmail_email
 
 
 class RolViewSet(viewsets.ModelViewSet):
@@ -67,7 +66,7 @@ class CustomPasswordResetView(GenericAPIView):
             <p>Si no solicitaste este correo, puedes ignorarlo.</p>
         """
 
-        send_resend_email(email, subject, html_content)
+        send_gmail_email(email, subject, html_content)
 
         return Response({'message': 'Correo de recuperación enviado exitosamente.'}, status=status.HTTP_200_OK)
 
