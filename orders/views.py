@@ -5,7 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.response import Response
 from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from SmartCartBackend import settings
 from .permissions import IsOwnerOrAdminOrAssignedDelivery, IsCartOwner
@@ -127,6 +127,8 @@ class CheckoutView(APIView):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class StripeWebhookView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request, *args, **kwargs):
         payload = request.body
         sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
@@ -141,7 +143,7 @@ class StripeWebhookView(APIView):
 
         if event['type'] == 'checkout.session.completed':
             session = event['data']['object']
-            user_id = session['metadata'].get('user_id')
+            user_id = session.get('metadata', {}).get('user_id')
 
             if not user_id:
                 return Response({'error': 'No user_id in metadata'}, status=status.HTTP_400_BAD_REQUEST)
@@ -152,12 +154,10 @@ class StripeWebhookView(APIView):
                 if not cart.items.exists():
                     return Response({'error': 'Carrito vacío.'}, status=status.HTTP_400_BAD_REQUEST)
 
-
                 order = Order.objects.create(
                     client=cart.user,
                     status='paid'
                 )
-
 
                 for item in cart.items.all():
                     OrderItem.objects.create(
@@ -165,7 +165,6 @@ class StripeWebhookView(APIView):
                         product=item.product,
                         quantity=item.quantity
                     )
-
 
                 cart.delete()
 
