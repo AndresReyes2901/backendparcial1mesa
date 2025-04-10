@@ -17,13 +17,9 @@ router.register(r'order-items', OrderItemViewSet, basename='orderitem')
 router.register(r'cart', CartViewSet, basename="cart")
 router.register(r'cart-items', CartItemViewSet, basename="cart-items")
 
-checkout_router = routers.DefaultRouter()
-checkout_router.register(r'checkout', CheckoutView, basename='checkout')
-
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
-    path('api/', include(checkout_router.urls)),
     path('api-token-auth/', obtain_auth_token, name='api_token_auth'),
     path('api/logout/', LogoutView.as_view(), name='api_logout'),
     path('api/register-cliente/', RegisterClienteView.as_view(), name='register_cliente'),
