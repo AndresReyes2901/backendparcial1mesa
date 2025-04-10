@@ -131,45 +131,49 @@ class StripeWebhookView(APIView):
         payload = request.body
         sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
         endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
-        event = None
 
         try:
             event = stripe.Webhook.construct_event(
                 payload, sig_header, endpoint_secret
             )
         except (ValueError, stripe.error.SignatureVerificationError):
-            return Response({'error': 'Invalid payload or signature'}, status=400)
+            return Response({'error': 'Invalid payload or signature'}, status=status.HTTP_400_BAD_REQUEST)
 
         if event['type'] == 'checkout.session.completed':
             session = event['data']['object']
             user_id = session['metadata'].get('user_id')
 
             if not user_id:
-                return Response({'error': 'No user_id in metadata'}, status=400)
+                return Response({'error': 'No user_id in metadata'}, status=status.HTTP_400_BAD_REQUEST)
 
             try:
-                cart = get_object_or_404(Cart, user_id=user_id)
+                cart = Cart.objects.get(user_id=user_id)
 
                 if not cart.items.exists():
-                    return Response({'error': 'El carrito está vacío.'}, status=400)
+                    return Response({'error': 'Carrito vacío.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
                 order = Order.objects.create(
                     client=cart.user,
-                    status="paid"
+                    status='paid'
                 )
+
 
                 for item in cart.items.all():
                     OrderItem.objects.create(
                         order=order,
                         product=item.product,
-                        quantity=item.quantity,
+                        quantity=item.quantity
                     )
 
-                # Vaciar carrito después del pago
-                cart.items.all().delete()
 
+                cart.delete()
+
+                print(f"Pago exitoso para usuario {user_id}, orden {order.id} creada y carrito eliminado.")
+
+            except Cart.DoesNotExist:
+                return Response({'error': 'Carrito no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
             except Exception as e:
-                return Response({'error': str(e)}, status=500)
+                return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        return Response(status=200)
+        return Response(status=status.HTTP_200_OK)
