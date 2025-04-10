@@ -72,7 +72,7 @@ class CartViewSet(viewsets.ModelViewSet):
         return Cart.objects.filter(user=user)
 
     def perform_create(self, serializer):
-        serializer.save(client=self.request.user)
+        serializer.save(user=self.request.user)
 
 class CartItemViewSet(viewsets.ModelViewSet):
     queryset = CartItem.objects.all()
