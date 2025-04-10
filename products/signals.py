@@ -15,12 +15,12 @@ def notify_low_stock(sender,instance, **kwargs):
 
         if recipient_list:
             subject = f"Stock bajo para el producto: {instance.name}"
-            message = {
+            message = (
                 f"Estimado Administrador,\n\n"
                 f"El producto '{instance.name}' tiene un stock bajo de {instance.stock} unidades.\n"
                 f"Por favor, considere reabastecerlo lo antes posible.\n\n"
                 f"SmartCart System"
-            }
+            )
 
             send_mail(
                 subject,
