@@ -8,10 +8,11 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from SmartCartBackend import settings
-from .permissions import IsOwnerOrAdminOrAssignedDelivery,IsCartOwner
+from .permissions import IsOwnerOrAdminOrAssignedDelivery, IsCartOwner
 from .models import Order, OrderItem, OrderStatusHistory, Cart, CartItem
 from .serializers import OrderSerializer, OrderItemSerializer, CartSerializer, CartItemSerializer
 from stripe.error import StripeError
+
 
 class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
@@ -68,15 +69,21 @@ class CartViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.is_staff or user.is_superuser:
             return Cart.objects.all()
-        return Cart.objects.filter(user=user)
+
+        queryset = Cart.objects.filter(user=user)
+        if not queryset.exists():
+            return Cart.objects.none()
+
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+
 class CartItemViewSet(viewsets.ModelViewSet):
     queryset = CartItem.objects.all()
     serializer_class = CartItemSerializer
-    permission_classes = [IsAuthenticated,IsCartOwner]
+    permission_classes = [IsAuthenticated, IsCartOwner]
 
     def perform_create(self, serializer):
         cart, created = Cart.objects.get_or_create(user=self.request.user)
@@ -117,6 +124,7 @@ class CheckoutView(APIView):
         except StripeError as e:
             return Response({'error': str(e)}, status=500)
 
+
 @method_decorator(csrf_exempt, name='dispatch')
 class StripeWebhookView(APIView):
     def post(self, request, *args, **kwargs):
@@ -129,13 +137,8 @@ class StripeWebhookView(APIView):
             event = stripe.Webhook.construct_event(
                 payload, sig_header, endpoint_secret
             )
-        except ValueError as e:
-
-            return Response({'error': 'Invalid payload'}, status=400)
-        except stripe.error.SignatureVerificationError as e:
-
-            return Response({'error': 'Invalid signature'}, status=400)
-
+        except (ValueError, stripe.error.SignatureVerificationError):
+            return Response({'error': 'Invalid payload or signature'}, status=400)
 
         if event['type'] == 'checkout.session.completed':
             session = event['data']['object']
@@ -147,7 +150,15 @@ class StripeWebhookView(APIView):
             try:
                 cart = get_object_or_404(Cart, user_id=user_id)
 
-                order = Order.objects.create(client=cart.user, status="pending")
+                if not cart.items.exists():
+                    return Response({'error': 'El carrito está vacío.'}, status=400)
+
+
+                order = Order.objects.create(
+                    client=cart.user,
+                    status="paid"
+                )
+
                 for item in cart.items.all():
                     OrderItem.objects.create(
                         order=order,
@@ -155,11 +166,10 @@ class StripeWebhookView(APIView):
                         quantity=item.quantity,
                     )
 
+                # Vaciar carrito después del pago
                 cart.items.all().delete()
 
             except Exception as e:
-
                 return Response({'error': str(e)}, status=500)
-
 
         return Response(status=200)
