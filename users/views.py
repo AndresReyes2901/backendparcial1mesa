@@ -47,7 +47,6 @@ class CustomPasswordResetView(GenericAPIView):
         email = request.data.get('correo')
         if not email:
             return Response({'error': 'Debes proporcionar un correo electrónico.'}, status=status.HTTP_400_BAD_REQUEST)
-
         try:
             user = User.objects.get(correo=email)
         except User.DoesNotExist:
