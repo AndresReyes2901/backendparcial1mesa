@@ -13,6 +13,7 @@ from .serializers import RolSerializer, UsuarioSerializer
 from .permissions import IsStaffOrSuperUser
 from rest_framework.response import Response
 from .utils import send_gmail_email
+from smtplib import SMTPException
 
 
 class RolViewSet(viewsets.ModelViewSet):
@@ -43,10 +44,12 @@ User = get_user_model()
 
 class CustomPasswordResetView(GenericAPIView):
     permission_classes = [AllowAny]
+
     def post(self, request, *args, **kwargs):
         email = request.data.get('correo')
         if not email:
             return Response({'error': 'Debes proporcionar un correo electrónico.'}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             user = User.objects.get(correo=email)
         except User.DoesNotExist:
@@ -67,6 +70,9 @@ class CustomPasswordResetView(GenericAPIView):
 
         try:
             send_gmail_email(email, subject, html_content)
+            return Response({'message': 'Correo de recuperación enviado exitosamente.'}, status=status.HTTP_200_OK)
+        except SMTPException as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
