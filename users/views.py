@@ -45,12 +45,12 @@ User = get_user_model()
 class CustomPasswordResetView(GenericAPIView):
     permission_classes = [AllowAny]
     def post(self, request, *args, **kwargs):
-        correo = request.data.get('correo')
-        if not correo:
+        email = request.data.get('correo')
+        if not email:
             return Response({'error': 'Debes proporcionar un correo electrónico.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            user = User.objects.get(correo=correo)
+            user = User.objects.get(correo=email)
         except User.DoesNotExist:
             return Response({'error': 'Usuario no encontrado con ese correo.'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -67,7 +67,7 @@ class CustomPasswordResetView(GenericAPIView):
             <p>Si no solicitaste este correo, puedes ignorarlo.</p>
         """
 
-        send_resend_email(correo, subject, html_content)
+        send_resend_email(email, subject, html_content)
 
         return Response({'message': 'Correo de recuperación enviado exitosamente.'}, status=status.HTTP_200_OK)
 
