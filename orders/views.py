@@ -115,3 +115,42 @@ class CheckoutView(APIView):
 
         except StripeError as e:
             return Response({'error': str(e)}, status=500)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class StripeWebhookView(APIView):
+    def post(self, request, *args, **kwargs):
+        payload = request.body
+        sig_header = request.META['HTTP_STRIPE_SIGNATURE']
+        endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
+        event = None
+
+        try:
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, endpoint_secret
+            )
+        except ValueError as e:
+
+            return Response(status=400)
+        except stripe.error.SignatureVerificationError as e:
+
+            return Response(status=400)
+
+
+        if event['type'] == 'checkout.session.completed':
+            session = event['data']['object']
+            user_id = session['metadata']['user_id']
+
+
+            cart = get_object_or_404(Cart, user_id=user_id)
+
+            order = Order.objects.create(client=cart.user, status="pending")
+            for item in cart.items.all():
+                OrderItem.objects.create(
+                    order=order,
+                    product=item.product,
+                    quantity=item.quantity,
+                )
+
+            cart.items.all().delete()
+
+        return Response(status=200)
