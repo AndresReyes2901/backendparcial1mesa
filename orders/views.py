@@ -85,8 +85,8 @@ class CartItemViewSet(viewsets.ModelViewSet):
 
 
 
-class CheckoutViewSet(APIView):
-    permission_classes = [IsAuthenticated,IsCartOwner]
+class CheckoutView(APIView):
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         cart = get_object_or_404(Cart, user=request.user)
@@ -108,11 +108,9 @@ class CheckoutViewSet(APIView):
             payment_method_types=['card'],
             line_items=line_items,
             mode='payment',
-            success_url='http://localhost:8000/payment-success',
-            cancel_url='http://localhost:8000/payment-cancel',
-            metadata={
-                "user_id": request.user.id
-            }
+            success_url='https://backenddjango-production-c48c.up.railway.app/payment-success',
+            cancel_url='https://backenddjango-production-c48c.up.railway.app/payment-cancel',
+            metadata={"user_id": request.user.id}
         )
         return Response({'checkout_url': session.url})
 
