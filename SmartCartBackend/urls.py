@@ -29,7 +29,6 @@ urlpatterns = [
     path('api/register-cliente/', RegisterClienteView.as_view(), name='register_cliente'),
     path('api/register-delivery/', RegisterDeliveryView.as_view(), name='register_delivery'),
     path('api/password-reset/', CustomPasswordResetView.as_view(), name='custom_password_reset'),
-    path('api/reset-password-confirm/<uidb64>/<token>/', PasswordResetConfirmView.as_view(),
-         name='password_reset_confirm'),
+    path('api/reset-password-confirm/<uid>/<token>/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('api/stripe-webhook/', StripeWebhookView.as_view(), name='stripe-webhook'),
 ]

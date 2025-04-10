@@ -81,19 +81,21 @@ class CustomPasswordResetView(GenericAPIView):
 class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
 
-    def post(self, request, uidb64, token):
+    def post(self, request, uid, token):
         try:
-
-            uid = force_str(urlsafe_base64_decode(uidb64))
             user = Usuario.objects.get(pk=uid)
 
             if not default_token_generator.check_token(user, token):
                 return Response({"error": "Token inválido o expirado."}, status=status.HTTP_400_BAD_REQUEST)
 
             new_password = request.data.get("new_password")
-            if not new_password:
-                return Response({"error": "Debe proporcionar una nueva contraseña."},
-                                status=status.HTTP_400_BAD_REQUEST)
+            confirm_password = request.data.get("confirm_password")
+
+            if not new_password or not confirm_password:
+                return Response({"error": "Debes proporcionar y confirmar la nueva contraseña."}, status=status.HTTP_400_BAD_REQUEST)
+
+            if new_password != confirm_password:
+                return Response({"error": "Las contraseñas no coinciden."}, status=status.HTTP_400_BAD_REQUEST)
 
             user.set_password(new_password)
             user.save()
@@ -102,7 +104,6 @@ class PasswordResetConfirmView(APIView):
 
         except (TypeError, ValueError, OverflowError, Usuario.DoesNotExist):
             return Response({"error": "Link inválido."}, status=status.HTTP_400_BAD_REQUEST)
-
 
 class RegisterClienteView(APIView):
     permission_classes = [AllowAny]
