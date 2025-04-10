@@ -88,6 +88,7 @@ class CheckoutView(APIView):
 
     def post(self, request, *args, **kwargs):
         try:
+            stripe.api_key = settings.STRIPE_SECRET_KEY
             cart = get_object_or_404(Cart, user=request.user)
             line_items = []
 
