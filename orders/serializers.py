@@ -25,10 +25,11 @@ class CartItemSerializer(serializers.ModelSerializer):
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True)
-
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
         model = Cart
         fields = ['id', 'user', 'items','total_price']
+        read_only_fields = ('user',)
 
     def create(self, validated_data):
         items_data = validated_data.pop('items')
