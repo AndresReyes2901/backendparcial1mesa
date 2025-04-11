@@ -24,6 +24,10 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+
+        if getattr(self, 'swagger_fake_view', False):
+            return Order.objects.none()
+
         if user.is_staff or user.is_superuser:
             return Order.objects.all()
         elif hasattr(user, 'rol') and user.rol.nombre.lower() == 'delivery':
@@ -40,7 +44,8 @@ class OrderViewSet(viewsets.ModelViewSet):
         if old_status != instance.status:
             OrderStatusHistory.objects.create(
                 order=instance,
-                status=instance.status,
+                previous_status=old_status,
+                new_status=instance.status,
             )
 
     def perform_create(self, serializer):
@@ -52,6 +57,8 @@ class OrderItemViewSet(viewsets.ModelViewSet):
     permission_classes = [IsOwnerOrAdminOrAssignedDelivery]
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Order.objects.none()
         user = self.request.user
         if user.is_staff or user.is_superuser:
             return OrderItem.objects.all()
@@ -68,6 +75,9 @@ class CartViewSet(viewsets.ModelViewSet):
     search_fields = ['client__correo']
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Order.objects.none()
+
         user = self.request.user
         if user.is_staff or user.is_superuser:
             return Cart.objects.all()

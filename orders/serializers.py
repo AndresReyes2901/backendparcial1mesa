@@ -6,7 +6,7 @@ from .models import OrderStatusHistory
 class OrderStatusHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderStatusHistory
-        fields = ['id','status', 'changed_at']
+        fields = ['id','previous_status','new_status','changed_at']
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
