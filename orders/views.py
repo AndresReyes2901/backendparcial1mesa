@@ -12,6 +12,8 @@ from .permissions import IsOwnerOrAdminOrAssignedDelivery, IsCartOwner
 from .models import Order, OrderItem, OrderStatusHistory, Cart, CartItem
 from .serializers import OrderSerializer, OrderItemSerializer, CartSerializer, CartItemSerializer
 from stripe.error import StripeError
+from django.core.mail import EmailMessage
+from .utils import generate_invoice_pdf
 
 
 class OrderViewSet(viewsets.ModelViewSet):
@@ -167,6 +169,17 @@ class StripeWebhookView(APIView):
                     )
 
                 cart.delete()
+
+                pdf_buffer = generate_invoice_pdf(order)
+
+                email = EmailMessage(
+                    subject=f"Tu recibo de compra - Orden #{order.id}",
+                    body="Gracias por tu compra. Adjunto encontrarás tu recibo en PDF.",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to=[order.client.correo],  # Usamos el campo correo de tu usuario
+                )
+                email.attach(f"recibo_orden_{order.id}.pdf", pdf_buffer.read(), "application/pdf")
+                email.send()
 
                 print(f"Pago exitoso para usuario {user_id}, orden {order.id} creada y carrito eliminado.")
 
