@@ -25,7 +25,7 @@ class UsuarioAdmin(BaseUserAdmin):
 
     def save_model(self, request, obj, form, change):
 
-        if obj.rol and obj.rol.nombre.lower() == 'Administrador':
+        if obj.rol and obj.rol.nombre.lower() == 'administrador':
             obj.is_staff = True
         else:
             obj.is_staff = False
