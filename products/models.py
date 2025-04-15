@@ -13,6 +13,9 @@ class Product(models.Model):
     has_discount = models.BooleanField(default=False)
     discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
 
+    related_products = models.ManyToManyField('self', blank=True, symmetrical=False,
+                                              related_name='recommended_for')
+
     @property
     def final_price(self):
         if self.has_discount and self.discount_percentage > 0:

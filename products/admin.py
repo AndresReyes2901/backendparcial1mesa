@@ -21,6 +21,20 @@ class ProductAdmin(admin.ModelAdmin):
     search_fields = ('name',)
     list_filter = ('is_active', 'created_at', LowStockFilter)
     ordering = ('-created_at',)
+    filter_horizontal = ('related_products',)
+
+    fieldsets = (
+        (None, {
+            'fields': ('name', 'description', 'price', 'stock', 'is_active')
+        }),
+        ('Descuentos', {
+            'fields': ('has_discount', 'discount_percentage')
+        }),
+        ('Recomendaciones', {
+            'fields': ('related_products',),
+            'description': 'Selecciona productos para recomendar junto con este producto'
+        })
+    )
 
     def highlight_stock(self, obj):
         if obj.stock < 6:

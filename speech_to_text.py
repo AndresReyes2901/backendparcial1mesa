@@ -66,9 +66,9 @@ def detectar_productos_en_texto(texto, productos_backend):
     for producto in productos_backend:
         nombre_producto = producto['name'].lower()
 
-        # Revisar si alguna palabra del texto aparece en el nombre del producto
+
         if any(palabra in nombre_producto for palabra in palabras):
-            cantidad = extraer_cantidad(texto) or 1  # Si no se detecta número, asumir 1
+            cantidad = extraer_cantidad(texto) or 1
             productos_detectados.append({
                 "product": producto['id'],
                 "quantity": cantidad,

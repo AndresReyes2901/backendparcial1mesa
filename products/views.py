@@ -1,11 +1,11 @@
 from decimal import Decimal
-
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import Product
 from .serializers import ProductSerializer
 from .permissions import IsStaffOrSuperUser
+from orders.models import Cart
 
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -81,3 +81,41 @@ class ProductViewSet(viewsets.ModelViewSet):
                 {"error": "Valor de descuento inválido"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+    @action(detail=False, methods=['get'])
+    def recommendations(self, request):
+        """Obtiene recomendaciones basadas en el carrito del usuario"""
+        user = request.user
+
+        if not user.is_authenticated:
+            return Response({"error": "Usuario no autenticado"},
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+
+            cart = Cart.objects.get(user=user)
+            cart_products = [item.product for item in cart.items.all()]
+
+            if not cart_products:
+
+                recommendations = Product.objects.filter(
+                    is_active=True,
+                    is_available=True
+                ).order_by('-id')[:5]
+            else:
+
+                recommendations = Product.objects.filter(
+                    is_active=True,
+                    is_available=True,
+                    recommended_for__in=cart_products
+                ).exclude(id__in=[p.id for p in cart_products]).distinct()[:5]
+
+            return Response(ProductSerializer(recommendations, many=True).data)
+
+        except Cart.DoesNotExist:
+
+            recommendations = Product.objects.filter(
+                is_active=True,
+                is_available=True
+            ).order_by('-id')[:5]
+            return Response(ProductSerializer(recommendations, many=True).data)
