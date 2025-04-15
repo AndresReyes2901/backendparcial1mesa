@@ -76,7 +76,7 @@ class OrderSerializer(serializers.ModelSerializer):
             OrderItem.objects.create(order=order, product=product, quantity=quantity)
 
 
-            total_price += product.price * quantity
+            total_price += product.final_price * quantity
 
 
             product.stock -= quantity

@@ -10,6 +10,16 @@ class Product(models.Model):
     is_available = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    has_discount = models.BooleanField(default=False)
+    discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+
+    @property
+    def final_price(self):
+        if self.has_discount and self.discount_percentage > 0:
+            discount = (self.price * self.discount_percentage) / 100
+            return round(self.price - discount, 2)
+        return self.price
+
     def save(self, *args, **kwargs):
         if self.stock <= 0:
             self.is_available = False
