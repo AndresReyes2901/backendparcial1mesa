@@ -13,6 +13,7 @@ class Product(models.Model):
     has_discount = models.BooleanField(default=False)
     discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
 
+
     related_products = models.ManyToManyField('self', blank=True, symmetrical=False,
                                               related_name='recommended_for')
 

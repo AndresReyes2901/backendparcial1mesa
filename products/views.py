@@ -22,7 +22,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def apply_discount(self, request, pk=None):
-        """Aplica descuento a un solo producto"""
+
         product = self.get_object()
         try:
             discount_str = str(request.data.get('discount_percentage', '0'))
@@ -49,7 +49,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def bulk_discount(self, request):
-        """Aplica descuento a múltiples productos"""
+
         product_ids = request.data.get('product_ids', [])
 
         if not product_ids:
@@ -84,12 +84,12 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def recommendations(self, request):
-        """Obtiene recomendaciones basadas en el carrito del usuario"""
+
         user = request.user
 
         if not user.is_authenticated:
             return Response({"error": "Usuario no autenticado"},
-                            status=status.HTTP_401_UNAUTHORIZED)
+                          status=status.HTTP_401_UNAUTHORIZED)
 
         try:
 
@@ -119,4 +119,3 @@ class ProductViewSet(viewsets.ModelViewSet):
                 is_available=True
             ).order_by('-id')[:5]
             return Response(ProductSerializer(recommendations, many=True).data)
-

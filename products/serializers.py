@@ -11,7 +11,7 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_related_products_info(self, obj):
-        """Devuelve información básica de productos relacionados"""
+
         return [
             {
                 'id': product.id,
