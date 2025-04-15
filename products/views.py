@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -23,14 +25,15 @@ class ProductViewSet(viewsets.ModelViewSet):
         """Aplica descuento a un solo producto"""
         product = self.get_object()
         try:
-            discount = float(request.data.get('discount_percentage', 0))
+            discount_str = str(request.data.get('discount_percentage', '0'))
+            discount = float(discount_str)
             if discount < 0 or discount > 100:
                 return Response(
                     {"error": "El descuento debe estar entre 0 y 100%"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            product.discount_percentage = discount
+            product.discount_percentage = Decimal(discount_str)
             product.has_discount = discount > 0
             product.save()
 
@@ -56,7 +59,8 @@ class ProductViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            discount = float(request.data.get('discount_percentage', 0))
+            discount_str = str(request.data.get('discount_percentage', '0'))
+            discount = float(discount_str)
             if discount < 0 or discount > 100:
                 return Response(
                     {"error": "El descuento debe estar entre 0 y 100%"},
@@ -64,11 +68,11 @@ class ProductViewSet(viewsets.ModelViewSet):
                 )
 
             products = Product.objects.filter(id__in=product_ids)
+            decimal_discount = Decimal(discount_str)
             count = products.update(
-                discount_percentage=discount,
+                discount_percentage=decimal_discount,
                 has_discount=discount > 0
             )
-
             return Response({
                 "message": f"Descuento del {discount}% aplicado a {count} productos"
             })
