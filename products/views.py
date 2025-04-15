@@ -119,3 +119,4 @@ class ProductViewSet(viewsets.ModelViewSet):
                 is_available=True
             ).order_by('-id')[:5]
             return Response(ProductSerializer(recommendations, many=True).data)
+
