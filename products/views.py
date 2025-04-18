@@ -122,7 +122,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([IsStaffOrSuperUser])
 def client_report_view(request):
     client_id = request.query_params.get('client_id')
     start_date_str = request.query_params.get('start_date')
@@ -176,7 +176,7 @@ def client_report_view(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([IsStaffOrSuperUser])
 def top_products_report_view(request):
     start_date_str = request.query_params.get('start_date')
     end_date_str = request.query_params.get('end_date')
