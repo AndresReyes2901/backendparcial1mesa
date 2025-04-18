@@ -4,17 +4,20 @@ from django.contrib.auth.decorators import login_required
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import IsAdminUser
 from .models import Product
 from .serializers import ProductSerializer
 from .permissions import IsStaffOrSuperUser
 from orders.models import Cart
 from django.http import HttpResponse
 from datetime import datetime
+import logging
 from .reports import (
     generate_client_report, generate_top_products_report,
     export_to_excel, render_to_pdf
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -123,61 +126,115 @@ class ProductViewSet(viewsets.ModelViewSet):
             return Response(ProductSerializer(recommendations, many=True).data)
 
 
-@login_required
+@api_view(['GET'])
+@permission_classes([IsStaffOrSuperUser])
 def simple_client_report_view(request):
-
-    client_id = request.GET.get('client_id')
-    start_date_str = request.GET.get('start_date')
-    end_date_str = request.GET.get('end_date')
-
-    if not client_id:
-        return HttpResponse("Error: Se requiere un ID de cliente", status=400)
-
-    start_date = None
-    end_date = None
+    """
+    Genera un reporte de cliente en PDF o Excel
+    Parámetros:
+    - client_id: ID del cliente (obligatorio)
+    - start_date: Fecha de inicio (YYYY-MM-DD, opcional)
+    - end_date: Fecha de fin (YYYY-MM-DD, opcional)
+    - format: 'pdf' (por defecto) o 'excel'
+    """
     try:
-        if start_date_str:
-            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
-        if end_date_str:
-            end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
-    except ValueError:
-        return HttpResponse("Error: Formato de fecha inválido. Use YYYY-MM-DD", status=400)
+        client_id = request.GET.get('client_id')
+        start_date_str = request.GET.get('start_date')
+        end_date_str = request.GET.get('end_date')
+        report_format = request.GET.get('format', 'pdf').lower()
 
-    report_data = generate_client_report(client_id, start_date, end_date)
+        if not client_id:
+            return HttpResponse("Error: Se requiere un ID de cliente", status=400)
+
+        start_date = None
+        end_date = None
+        try:
+            if start_date_str:
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+            if end_date_str:
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+        except ValueError as e:
+            logger.error(f"Error de formato de fecha: {str(e)}")
+            return HttpResponse(f"Error: Formato de fecha inválido. Use YYYY-MM-DD. Detalle: {str(e)}", status=400)
+
+        report_data = generate_client_report(client_id, start_date, end_date)
+        
+        if not report_data.get('orders'):
+            return HttpResponse("No hay datos para el cliente y período seleccionados", status=404)
+            
+        if report_format == 'excel':
+            excel_data = export_to_excel(report_data, 'client')
+            response = HttpResponse(
+                excel_data.read(),
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = f'attachment; filename=cliente_{client_id}_reporte.xlsx'
+            return response
+        else:  # Default is PDF
+            pdf = render_to_pdf('reports/client_report.html', report_data)
+            if pdf:
+                response = HttpResponse(pdf, content_type='application/pdf')
+                response['Content-Disposition'] = f'attachment; filename=cliente_{client_id}_reporte.pdf'
+                return response
+            
+            logger.error("Error generando PDF para reporte de cliente")
+            return HttpResponse("Error generando PDF. Revisa los logs del servidor.", status=500)
+    except Exception as e:
+        logger.exception(f"Error inesperado en simple_client_report_view: {str(e)}")
+        return HttpResponse(f"Error interno del servidor: {str(e)}", status=500)
 
 
-    pdf = render_to_pdf('reports/client_report.html', report_data)
-    if pdf:
-        response = HttpResponse(pdf, content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename=cliente_{client_id}_reporte.pdf'
-        return response
-    return HttpResponse("Error generando PDF", status=500)
-
-
-@login_required
+@api_view(['GET'])
+@permission_classes([IsStaffOrSuperUser])
 def simple_top_products_report_view(request):
-
-    start_date_str = request.GET.get('start_date')
-    end_date_str = request.GET.get('end_date')
-    limit = request.GET.get('limit', 10)
-
-    start_date = None
-    end_date = None
+    """
+    Genera un reporte de productos más vendidos en PDF o Excel
+    Parámetros:
+    - start_date: Fecha de inicio (YYYY-MM-DD, opcional)
+    - end_date: Fecha de fin (YYYY-MM-DD, opcional)
+    - limit: Número máximo de productos a mostrar (opcional, default=10)
+    - format: 'pdf' (por defecto) o 'excel'
+    """
     try:
-        if start_date_str:
-            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
-        if end_date_str:
-            end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
-        limit = int(limit)
-    except ValueError:
-        return HttpResponse("Error: Formato de fecha o límite inválido", status=400)
+        start_date_str = request.GET.get('start_date')
+        end_date_str = request.GET.get('end_date')
+        limit = request.GET.get('limit', 10)
+        report_format = request.GET.get('format', 'pdf').lower()
 
-    report_data = generate_top_products_report(start_date, end_date, limit)
+        start_date = None
+        end_date = None
+        try:
+            if start_date_str:
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+            if end_date_str:
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+            limit = int(limit)
+        except ValueError as e:
+            logger.error(f"Error de formato: {str(e)}")
+            return HttpResponse(f"Error: Formato de fecha o límite inválido. Detalle: {str(e)}", status=400)
 
-
-    pdf = render_to_pdf('reports/top_products_report.html', report_data)
-    if pdf:
-        response = HttpResponse(pdf, content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename=productos_mas_vendidos.pdf'
-        return response
-    return HttpResponse("Error generando PDF", status=500)
+        report_data = generate_top_products_report(start_date, end_date, limit)
+        
+        if not report_data.get('top_products'):
+            return HttpResponse("No hay datos de ventas para el período seleccionado", status=404)
+            
+        if report_format == 'excel':
+            excel_data = export_to_excel(report_data, 'top_products')
+            response = HttpResponse(
+                excel_data.read(),
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = 'attachment; filename=productos_mas_vendidos.xlsx'
+            return response
+        else:  # Default is PDF
+            pdf = render_to_pdf('reports/top_products_report.html', report_data)
+            if pdf:
+                response = HttpResponse(pdf, content_type='application/pdf')
+                response['Content-Disposition'] = 'attachment; filename=productos_mas_vendidos.pdf'
+                return response
+                
+            logger.error("Error generando PDF para reporte de productos más vendidos")
+            return HttpResponse("Error generando PDF. Revisa los logs del servidor.", status=500)
+    except Exception as e:
+        logger.exception(f"Error inesperado en simple_top_products_report_view: {str(e)}")
+        return HttpResponse(f"Error interno del servidor: {str(e)}", status=500)
