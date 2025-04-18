@@ -93,7 +93,7 @@ class ClientReportGenerator(ReportGenerator):
 
     
     def get_report_data(self, client_id, start_date=None, end_date=None):
-        orders = Order.objects.filter(user_id=client_id)
+        orders = Order.objects.filter(client_id=client_id)
         
         if start_date:
             orders = orders.filter(created_at__gte=start_date)
@@ -110,18 +110,19 @@ class ClientReportGenerator(ReportGenerator):
                 order.id, 
                 order.created_at.strftime("%d/%m/%Y %H:%M"), 
                 order.status, 
-                f"${order.total}"
+                f"${order.total_price}"
             ]
             orders_data.append(order_row)
-            total_spent += order.total
+            total_spent += order.total_price
             
             items = OrderItem.objects.filter(order=order)
             for item in items:
-                subtotal = item.price * item.quantity
+                item_price = item.product.final_price
+                subtotal = item_price * item.quantity
                 items_data.append([
                     order.id,
                     item.product.name,
-                    f"${item.price}",
+                    f"${item_price}",
                     item.quantity,
                     f"${subtotal}"
                 ])
@@ -207,7 +208,7 @@ class TopProductsReportGenerator(ReportGenerator):
 
     
     def get_report_data(self, start_date=None, end_date=None, limit=10):
-        from django.db.models import Sum
+        from django.db.models import Sum, F, ExpressionWrapper, DecimalField
         
         query = OrderItem.objects.values('product__id', 'product__name')
         
@@ -219,7 +220,12 @@ class TopProductsReportGenerator(ReportGenerator):
         
         top_products = query.annotate(
             total_sold=Sum('quantity'),
-            total_revenue=Sum('price')
+            total_revenue=Sum(
+                ExpressionWrapper(
+                    F('product__price') * F('quantity'),
+                    output_field=DecimalField()
+                )
+            )
         ).order_by('-total_sold')[:limit]
         
         products_data = []
@@ -253,3 +259,4 @@ class TopProductsReportGenerator(ReportGenerator):
         headings = ["ID", "Producto", "Cantidad Vendida", "Ingresos"]
         
         return self.generate_excel(headings, data, "productos_mas_vendidos")
+
