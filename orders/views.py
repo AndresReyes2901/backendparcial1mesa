@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import stripe
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
@@ -170,13 +172,19 @@ class StripeWebhookView(APIView):
                     client=cart.user,
                     status='paid'
                 )
-
+                total_price = Decimal('0')
                 for item in cart.items.all():
                     OrderItem.objects.create(
                         order=order,
                         product=item.product,
                         quantity=item.quantity
                     )
+                    price = item.product.final_price
+                    subtotal = price * item.quantity
+                    total_price += subtotal
+
+                order.total_price = total_price
+                order.save()
 
                 cart.delete()
 
