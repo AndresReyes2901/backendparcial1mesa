@@ -1,11 +1,18 @@
 from decimal import Decimal
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework.permissions import IsAdminUser
 from .models import Product
 from .serializers import ProductSerializer
 from .permissions import IsStaffOrSuperUser
 from orders.models import Cart
+from django.http import HttpResponse
+from datetime import datetime
+from .reports import (
+    generate_client_report, generate_top_products_report,
+    export_to_excel, render_to_pdf
+)
 
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -22,7 +29,6 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def apply_discount(self, request, pk=None):
-
         product = self.get_object()
         try:
             discount_str = str(request.data.get('discount_percentage', '0'))
@@ -49,7 +55,6 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def bulk_discount(self, request):
-
         product_ids = request.data.get('product_ids', [])
 
         if not product_ids:
@@ -84,26 +89,22 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def recommendations(self, request):
-
         user = request.user
 
         if not user.is_authenticated:
             return Response({"error": "Usuario no autenticado"},
-                          status=status.HTTP_401_UNAUTHORIZED)
+                            status=status.HTTP_401_UNAUTHORIZED)
 
         try:
-
             cart = Cart.objects.get(user=user)
             cart_products = [item.product for item in cart.items.all()]
 
             if not cart_products:
-
                 recommendations = Product.objects.filter(
                     is_active=True,
                     is_available=True
                 ).order_by('-id')[:5]
             else:
-
                 recommendations = Product.objects.filter(
                     is_active=True,
                     is_available=True,
@@ -113,9 +114,111 @@ class ProductViewSet(viewsets.ModelViewSet):
             return Response(ProductSerializer(recommendations, many=True).data)
 
         except Cart.DoesNotExist:
-
             recommendations = Product.objects.filter(
                 is_active=True,
                 is_available=True
             ).order_by('-id')[:5]
             return Response(ProductSerializer(recommendations, many=True).data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def client_report_view(request):
+    client_id = request.query_params.get('client_id')
+    start_date_str = request.query_params.get('start_date')
+    end_date_str = request.query_params.get('end_date')
+    export_format = request.query_params.get('format')
+
+    if not client_id:
+        return Response(
+            {"error": "Se requiere un ID de cliente"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    start_date = None
+    end_date = None
+    try:
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+    except ValueError:
+        return Response(
+            {"error": "Formato de fecha inválido. Use YYYY-MM-DD"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    report_data = generate_client_report(client_id, start_date, end_date)
+
+    if export_format == 'excel':
+
+        excel_file = export_to_excel(report_data, 'client')
+        response = HttpResponse(
+            excel_file.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename=cliente_{client_id}_reporte.xlsx'
+        return response
+
+    elif export_format == 'pdf':
+
+        pdf = render_to_pdf('reports/client_report.html', report_data)
+        if pdf:
+            response = HttpResponse(pdf, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename=cliente_{client_id}_reporte.pdf'
+            return response
+        return Response(
+            {"error": "Error generando PDF"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+    return Response(report_data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def top_products_report_view(request):
+    start_date_str = request.query_params.get('start_date')
+    end_date_str = request.query_params.get('end_date')
+    limit = request.query_params.get('limit', 10)
+    export_format = request.query_params.get('format')
+
+    start_date = None
+    end_date = None
+    try:
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+        limit = int(limit)
+    except ValueError:
+        return Response(
+            {"error": "Formato de fecha o límite inválido"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    report_data = generate_top_products_report(start_date, end_date, limit)
+
+    if export_format == 'excel':
+
+        excel_file = export_to_excel(report_data, 'top_products')
+        response = HttpResponse(
+            excel_file.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename=productos_mas_vendidos.xlsx'
+        return response
+
+    elif export_format == 'pdf':
+
+        pdf = render_to_pdf('reports/top_products_report.html', report_data)
+        if pdf:
+            response = HttpResponse(pdf, content_type='application/pdf')
+            response['Content-Disposition'] = 'attachment; filename=productos_mas_vendidos.pdf'
+            return response
+        return Response(
+            {"error": "Error generando PDF"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+    return Response(report_data)

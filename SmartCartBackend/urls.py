@@ -1,7 +1,8 @@
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
-from users.views import RolViewSet, UsuarioViewSet, CustomPasswordResetView, LogoutView, PasswordResetConfirmView,RegisterClienteView, RegisterDeliveryView
+from users.views import RolViewSet, UsuarioViewSet, CustomPasswordResetView, LogoutView, PasswordResetConfirmView, \
+    RegisterClienteView, RegisterDeliveryView
 from products.views import ProductViewSet
 from orders.views import OrderViewSet, OrderItemViewSet, CartViewSet, CartItemViewSet, CheckoutView, StripeWebhookView
 from rest_framework.authtoken.views import obtain_auth_token
@@ -42,11 +43,13 @@ urlpatterns = [
     path('api/register-cliente/', RegisterClienteView.as_view(), name='register_cliente'),
     path('api/register-delivery/', RegisterDeliveryView.as_view(), name='register_delivery'),
     path('api/password-reset/', CustomPasswordResetView.as_view(), name='custom_password_reset'),
-    path('api/reset-password-confirm/<uid>/<token>/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('api/reset-password-confirm/<uid>/<token>/', PasswordResetConfirmView.as_view(),
+         name='password_reset_confirm'),
     path('api/checkout/', CheckoutView.as_view(), name='checkout'),
     path('api/stripe/webhook/', StripeWebhookView.as_view(), name='stripe-webhook'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    path('api/products/', include('products.urls')),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
