@@ -77,7 +77,7 @@ class ReportGenerator:
             buffer = BytesIO()
             wb.save(buffer)
             buffer.seek(0)
-            
+
             response = HttpResponse(
                 buffer.getvalue(),
                 content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
