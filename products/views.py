@@ -11,10 +11,7 @@ from orders.models import Cart
 from django.http import HttpResponse
 from datetime import datetime
 import logging
-from .reports import (
-    generate_client_report, generate_top_products_report,
-    export_to_excel, render_to_pdf
-)
+from .simple_reports import ClientReportGenerator, TopProductsReportGenerator
 
 
 logger = logging.getLogger(__name__)
@@ -157,28 +154,13 @@ def simple_client_report_view(request):
             logger.error(f"Error de formato de fecha: {str(e)}")
             return HttpResponse(f"Error: Formato de fecha inválido. Use YYYY-MM-DD. Detalle: {str(e)}", status=400)
 
-        report_data = generate_client_report(client_id, start_date, end_date)
+        report_generator = ClientReportGenerator()
         
-        if not report_data.get('orders'):
-            return HttpResponse("No hay datos para el cliente y período seleccionados", status=404)
-            
         if report_format == 'excel':
-            excel_data = export_to_excel(report_data, 'client')
-            response = HttpResponse(
-                excel_data.read(),
-                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            )
-            response['Content-Disposition'] = f'attachment; filename=cliente_{client_id}_reporte.xlsx'
-            return response
+            return report_generator.generate_excel_report(client_id, start_date, end_date)
         else:  # Default is PDF
-            pdf = render_to_pdf('reports/client_report.html', report_data)
-            if pdf:
-                response = HttpResponse(pdf, content_type='application/pdf')
-                response['Content-Disposition'] = f'attachment; filename=cliente_{client_id}_reporte.pdf'
-                return response
+            return report_generator.generate_pdf_report(client_id, start_date, end_date)
             
-            logger.error("Error generando PDF para reporte de cliente")
-            return HttpResponse("Error generando PDF. Revisa los logs del servidor.", status=500)
     except Exception as e:
         logger.exception(f"Error inesperado en simple_client_report_view: {str(e)}")
         return HttpResponse(f"Error interno del servidor: {str(e)}", status=500)
@@ -213,28 +195,14 @@ def simple_top_products_report_view(request):
             logger.error(f"Error de formato: {str(e)}")
             return HttpResponse(f"Error: Formato de fecha o límite inválido. Detalle: {str(e)}", status=400)
 
-        report_data = generate_top_products_report(start_date, end_date, limit)
+        report_generator = TopProductsReportGenerator()
         
-        if not report_data.get('top_products'):
-            return HttpResponse("No hay datos de ventas para el período seleccionado", status=404)
-            
         if report_format == 'excel':
-            excel_data = export_to_excel(report_data, 'top_products')
-            response = HttpResponse(
-                excel_data.read(),
-                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            )
-            response['Content-Disposition'] = 'attachment; filename=productos_mas_vendidos.xlsx'
-            return response
+            return report_generator.generate_excel_report(start_date, end_date, limit)
         else:  # Default is PDF
-            pdf = render_to_pdf('reports/top_products_report.html', report_data)
-            if pdf:
-                response = HttpResponse(pdf, content_type='application/pdf')
-                response['Content-Disposition'] = 'attachment; filename=productos_mas_vendidos.pdf'
-                return response
+            return report_generator.generate_pdf_report(start_date, end_date, limit)
                 
-            logger.error("Error generando PDF para reporte de productos más vendidos")
-            return HttpResponse("Error generando PDF. Revisa los logs del servidor.", status=500)
     except Exception as e:
         logger.exception(f"Error inesperado en simple_top_products_report_view: {str(e)}")
         return HttpResponse(f"Error interno del servidor: {str(e)}", status=500)
+
