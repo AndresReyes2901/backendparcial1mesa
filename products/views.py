@@ -1,4 +1,6 @@
 from decimal import Decimal
+
+from django.contrib.auth.decorators import login_required
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
@@ -121,19 +123,15 @@ class ProductViewSet(viewsets.ModelViewSet):
             return Response(ProductSerializer(recommendations, many=True).data)
 
 
-@api_view(['GET'])
-@permission_classes([IsStaffOrSuperUser])
-def client_report_view(request):
-    client_id = request.query_params.get('client_id')
-    start_date_str = request.query_params.get('start_date')
-    end_date_str = request.query_params.get('end_date')
-    export_format = request.query_params.get('format')
+@login_required
+def simple_client_report_view(request):
+
+    client_id = request.GET.get('client_id')
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
 
     if not client_id:
-        return Response(
-            {"error": "Se requiere un ID de cliente"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return HttpResponse("Error: Se requiere un ID de cliente", status=400)
 
     start_date = None
     end_date = None
@@ -143,45 +141,25 @@ def client_report_view(request):
         if end_date_str:
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
     except ValueError:
-        return Response(
-            {"error": "Formato de fecha inválido. Use YYYY-MM-DD"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return HttpResponse("Error: Formato de fecha inválido. Use YYYY-MM-DD", status=400)
 
     report_data = generate_client_report(client_id, start_date, end_date)
 
-    if export_format == 'excel':
 
-        excel_file = export_to_excel(report_data, 'client')
-        response = HttpResponse(
-            excel_file.read(),
-            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
-        response['Content-Disposition'] = f'attachment; filename=cliente_{client_id}_reporte.xlsx'
+    pdf = render_to_pdf('reports/client_report.html', report_data)
+    if pdf:
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename=cliente_{client_id}_reporte.pdf'
         return response
-
-    elif export_format == 'pdf':
-
-        pdf = render_to_pdf('reports/client_report.html', report_data)
-        if pdf:
-            response = HttpResponse(pdf, content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename=cliente_{client_id}_reporte.pdf'
-            return response
-        return Response(
-            {"error": "Error generando PDF"},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-
-    return Response(report_data)
+    return HttpResponse("Error generando PDF", status=500)
 
 
-@api_view(['GET'])
-@permission_classes([IsStaffOrSuperUser])
-def top_products_report_view(request):
-    start_date_str = request.query_params.get('start_date')
-    end_date_str = request.query_params.get('end_date')
-    limit = request.query_params.get('limit', 10)
-    export_format = request.query_params.get('format')
+@login_required
+def simple_top_products_report_view(request):
+
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    limit = request.GET.get('limit', 10)
 
     start_date = None
     end_date = None
@@ -192,33 +170,14 @@ def top_products_report_view(request):
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
         limit = int(limit)
     except ValueError:
-        return Response(
-            {"error": "Formato de fecha o límite inválido"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return HttpResponse("Error: Formato de fecha o límite inválido", status=400)
 
     report_data = generate_top_products_report(start_date, end_date, limit)
 
-    if export_format == 'excel':
 
-        excel_file = export_to_excel(report_data, 'top_products')
-        response = HttpResponse(
-            excel_file.read(),
-            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
-        response['Content-Disposition'] = 'attachment; filename=productos_mas_vendidos.xlsx'
+    pdf = render_to_pdf('reports/top_products_report.html', report_data)
+    if pdf:
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename=productos_mas_vendidos.pdf'
         return response
-
-    elif export_format == 'pdf':
-
-        pdf = render_to_pdf('reports/top_products_report.html', report_data)
-        if pdf:
-            response = HttpResponse(pdf, content_type='application/pdf')
-            response['Content-Disposition'] = 'attachment; filename=productos_mas_vendidos.pdf'
-            return response
-        return Response(
-            {"error": "Error generando PDF"},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-
-    return Response(report_data)
+    return HttpResponse("Error generando PDF", status=500)
