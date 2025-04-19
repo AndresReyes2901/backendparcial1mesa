@@ -13,14 +13,18 @@ from datetime import datetime
 import logging
 from .simple_reports import ClientReportGenerator, TopProductsReportGenerator
 
-
 logger = logging.getLogger(__name__)
 
 
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [IsStaffOrSuperUser]
+    permission_classes = [IsAuthenticated]
+
+    def check_permissions(self, request):
+        super().check_permissions(request)
+        if request.method not in ['GET'] and not request.user.is_staff:
+            self.permission_denied(request)
 
     def get_queryset(self):
         user = self.request.user
@@ -155,12 +159,12 @@ def simple_client_report_view(request):
             return HttpResponse(f"Error: Formato de fecha inválido. Use YYYY-MM-DD. Detalle: {str(e)}", status=400)
 
         report_generator = ClientReportGenerator()
-        
+
         if report_format == 'excel':
             return report_generator.generate_excel_report(client_id, start_date, end_date)
         else:  # Default is PDF
             return report_generator.generate_pdf_report(client_id, start_date, end_date)
-            
+
     except Exception as e:
         logger.exception(f"Error inesperado en simple_client_report_view: {str(e)}")
         return HttpResponse(f"Error interno del servidor: {str(e)}", status=500)
@@ -196,13 +200,12 @@ def simple_top_products_report_view(request):
             return HttpResponse(f"Error: Formato de fecha o límite inválido. Detalle: {str(e)}", status=400)
 
         report_generator = TopProductsReportGenerator()
-        
+
         if report_format == 'excel':
             return report_generator.generate_excel_report(start_date, end_date, limit)
         else:  # Default is PDF
             return report_generator.generate_pdf_report(start_date, end_date, limit)
-                
+
     except Exception as e:
         logger.exception(f"Error inesperado en simple_top_products_report_view: {str(e)}")
         return HttpResponse(f"Error interno del servidor: {str(e)}", status=500)
-
