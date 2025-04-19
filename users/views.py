@@ -60,12 +60,19 @@ class CustomPasswordResetView(GenericAPIView):
 
         domain = "https://backenddjango-production-c48c.up.railway.app"
         reset_url = f"{domain}/api/reset-password-confirm/{uid}/{token}"
+        app_url = f"parcialapp://resetpassword/{uid}/{token}"
 
         subject = "Recuperación de Contraseña"
         html_content = f"""
             <p>Hola {user.nombre},</p>
-            <p>Has solicitado restablecer tu contraseña. Haz click en el siguiente enlace:</p>
-            <a href="{reset_url}">Restablecer contraseña</a>
+            <p>Has solicitado restablecer tu contraseña.</p>
+
+            <p><strong>Desde tu navegador:</strong><br>
+            <a href="{reset_url}">Restablecer contraseña</a></p>
+
+            <p><strong>Desde la app SmartCart:</strong><br>
+            <a href="{app_url}">Abrir en la aplicación</a></p>
+
             <p>Si no solicitaste este correo, puedes ignorarlo.</p>
         """
 
@@ -92,7 +99,8 @@ class PasswordResetConfirmView(APIView):
             confirm_password = request.data.get("confirm_password")
 
             if not new_password or not confirm_password:
-                return Response({"error": "Debes proporcionar y confirmar la nueva contraseña."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": "Debes proporcionar y confirmar la nueva contraseña."},
+                                status=status.HTTP_400_BAD_REQUEST)
 
             if new_password != confirm_password:
                 return Response({"error": "Las contraseñas no coinciden."}, status=status.HTTP_400_BAD_REQUEST)
@@ -104,6 +112,7 @@ class PasswordResetConfirmView(APIView):
 
         except (TypeError, ValueError, OverflowError, Usuario.DoesNotExist):
             return Response({"error": "Link inválido."}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class RegisterClienteView(APIView):
     permission_classes = [AllowAny]
