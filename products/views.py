@@ -131,14 +131,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 @api_view(['GET'])
 @permission_classes([IsStaffOrSuperUser])
 def simple_client_report_view(request):
-    """
-    Genera un reporte de cliente en PDF o Excel
-    Parámetros:
-    - client_id: ID del cliente (obligatorio)
-    - start_date: Fecha de inicio (YYYY-MM-DD, opcional)
-    - end_date: Fecha de fin (YYYY-MM-DD, opcional)
-    - format: 'pdf' (por defecto) o 'excel'
-    """
+
     try:
         client_id = request.GET.get('client_id')
         start_date_str = request.GET.get('start_date')
@@ -174,14 +167,7 @@ def simple_client_report_view(request):
 @api_view(['GET'])
 @permission_classes([IsStaffOrSuperUser])
 def simple_top_products_report_view(request):
-    """
-    Genera un reporte de productos más vendidos en PDF o Excel
-    Parámetros:
-    - start_date: Fecha de inicio (YYYY-MM-DD, opcional)
-    - end_date: Fecha de fin (YYYY-MM-DD, opcional)
-    - limit: Número máximo de productos a mostrar (opcional, default=10)
-    - format: 'pdf' (por defecto) o 'excel'
-    """
+
     try:
         start_date_str = request.GET.get('start_date')
         end_date_str = request.GET.get('end_date')

@@ -179,6 +179,11 @@ class StripeWebhookView(APIView):
                         product=item.product,
                         quantity=item.quantity
                     )
+
+                    product = item.product
+                    product.stock -= item.quantity
+                    product.save()
+
                     price = item.product.final_price
                     subtotal = price * item.quantity
                     total_price += subtotal
