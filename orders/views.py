@@ -196,11 +196,11 @@ class StripeWebhookView(APIView):
                 pdf_buffer = generate_invoice_pdf(order)
 
                 email = EmailMessage(
-                    subject=f"Tu recibo de compra,
+                    subject=f"Tu recibo de compra - Orden #{order.id}",
                     body="Gracias por tu compra. Adjunto encontrarás tu recibo en PDF.",
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     to=[order.client.correo],
-                )
+                ) #aqui la cague, quite el {order.id}
                 email.attach(f"recibo_orden_{order.id}.pdf", pdf_buffer.read(), "application/pdf")
                 email.send()
 
