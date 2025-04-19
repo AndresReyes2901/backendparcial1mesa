@@ -129,3 +129,18 @@ class RegisterDeliveryView(APIView):
             serializer.save()
             return Response({"detail": "Delivery registrado exitosamente."}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        data = {
+            'id': user.id,
+            'correo': user.correo,
+            'nombre': user.nombre,
+            'apellido': user.apellido,
+            'rol': user.rol.nombre if user.rol else None,
+        }
+        return Response(data)
