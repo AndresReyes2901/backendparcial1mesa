@@ -17,7 +17,6 @@ def track_order_status_change(sender, instance, **kwargs):
 
 @receiver(post_save, sender=OrderStatusHistory)
 def update_order_status_from_history(sender, instance, created, **kwargs):
-    if created:
         order = instance.order
         if order.status != instance.new_status:
             Order.objects.filter(pk=order.pk).update(status=instance.new_status)
