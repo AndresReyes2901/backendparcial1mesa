@@ -2,7 +2,8 @@ from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
 from rest_framework import viewsets, status
-from rest_framework.decorators import action, api_view, permission_classes,IsAuthenticated
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import Product
 from .serializers import ProductSerializer
