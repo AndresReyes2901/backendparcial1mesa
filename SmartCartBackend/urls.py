@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
 from users.views import RolViewSet, UsuarioViewSet, CustomPasswordResetView, LogoutView, PasswordResetConfirmView, \
-    RegisterClienteView, RegisterDeliveryView
+    RegisterClienteView, RegisterDeliveryView, UserProfileView
 from products.views import ProductViewSet
 from orders.views import OrderViewSet, OrderItemViewSet, CartViewSet, CartItemViewSet, CheckoutView, StripeWebhookView
 from rest_framework.authtoken.views import obtain_auth_token
