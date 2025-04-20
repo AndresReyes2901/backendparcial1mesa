@@ -165,7 +165,7 @@ STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "https://pos-frontend-production-fd0d.up.railway.app"
+    "https://pos-frontend-production-fd0d.up.railway.app/"
 ]
 CORS_ALLOW_METHODS = [
     "DELETE",
