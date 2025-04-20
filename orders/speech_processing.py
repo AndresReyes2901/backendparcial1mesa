@@ -33,14 +33,17 @@ def extraer_cantidad(texto):
 
     return None
 
+
 def detectar_productos_en_texto(texto, productos_backend):
     palabras = texto.lower().split()
+    palabras_filtradas = [p for p in palabras if len(p) > 2]  # Ignorar artículos y preposiciones cortas
     productos_detectados = []
 
     for producto in productos_backend:
         nombre_producto = producto['name'].lower()
 
-        if any(palabra in nombre_producto for palabra in palabras):
+
+        if all(palabra in nombre_producto for palabra in palabras_filtradas):
             cantidad = extraer_cantidad(texto) or 1
             productos_detectados.append({
                 "product": producto['id'],
