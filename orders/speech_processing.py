@@ -13,7 +13,7 @@ def extraer_cantidad(texto):
     if match:
         return int(match.group())
 
-    # Convierte palabras numéricas a números
+
     palabras_a_numeros = {
         "uno": 1, "una": 1,
         "dos": 2,

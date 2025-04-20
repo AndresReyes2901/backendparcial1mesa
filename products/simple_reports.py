@@ -73,10 +73,6 @@ class ReportGenerator:
             for row_idx, row_data in enumerate(data, 2):
                 for col_idx, value in enumerate(row_data, 1):
                     ws.cell(row=row_idx, column=col_idx, value=value)
-            
-            buffer = BytesIO()
-            wb.save(buffer)
-            buffer.seek(0)
 
             response = HttpResponse(
                 buffer.getvalue(),
@@ -191,16 +187,18 @@ class ClientReportGenerator(ReportGenerator):
             for row_idx, item_data in enumerate(data['items'], 2):
                 for col_idx, value in enumerate(item_data, 1):
                     ws_items.cell(row=row_idx, column=col_idx, value=value)
-        
+
         buffer = BytesIO()
         wb.save(buffer)
         buffer.seek(0)
-        
+
+        filename = f"cliente_{client_id}_reporte.xlsx"
         response = HttpResponse(
             buffer.getvalue(),
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
-        response['Content-Disposition'] = f'attachment; filename="cliente_{client_id}_reporte.xlsx"'
+        # Forma correcta de establecer el Content-Disposition
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
 
 
