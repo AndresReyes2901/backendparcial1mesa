@@ -1,5 +1,6 @@
 import re
 
+
 def singularizar_palabra(palabra):
     if palabra.endswith('es'):
         palabra = palabra[:-2]
@@ -7,44 +8,63 @@ def singularizar_palabra(palabra):
         palabra = palabra[:-1]
     return palabra
 
+
 def extraer_cantidad(texto):
+    texto = texto.lower()
 
-    match = re.search(r'\d+', texto)
-    if match:
-        return int(match.group())
+    patrones_cantidad = [
 
+        r'(\d+)\s+(unidades|productos|camaras|cámaras|webcams|unidad)',
+
+        r'(quiero|necesito|agregar|añadir|comprar)\s+(\d+)(?!\s*[a-z0-9])',
+    ]
+
+    for patron in patrones_cantidad:
+        match = re.search(patron, texto)
+        if match:
+            grupos = match.groups()
+            if patron.startswith(r'(\d+)'):
+                return int(grupos[0])
+            else:
+                return int(grupos[1])
 
     palabras_a_numeros = {
-        "uno": 1, "una": 1,
-        "dos": 2,
-        "tres": 3,
-        "cuatro": 4,
-        "cinco": 5,
-        "seis": 6,
-        "siete": 7,
-        "ocho": 8,
-        "nueve": 9,
-        "diez": 10,
+        "uno": 1, "una": 1, "dos": 2, "tres": 3, "cuatro": 4,
+        "cinco": 5, "seis": 6, "siete": 7, "ocho": 8, "nueve": 9, "diez": 10
     }
-    texto = texto.lower()
-    for palabra, numero in palabras_a_numeros.items():
-        if palabra in texto:
-            return numero
 
-    return None
+
+    for palabra, valor in palabras_a_numeros.items():
+        patron = rf'(quiero|necesito|agregar|añadir|comprar)\s+{palabra}'
+        if re.search(patron, texto):
+            return valor
+
+    primeras_palabras = texto.split()[:2]
+    for palabra in primeras_palabras:
+        if palabra in palabras_a_numeros:
+            return palabras_a_numeros[palabra]
+
+    return 1
 
 
 def detectar_productos_en_texto(texto, productos_backend):
-    palabras = texto.lower().split()
-    palabras_filtradas = [p for p in palabras if len(p) > 2]  # Ignorar artículos y preposiciones cortas
+    texto = texto.lower()
+
+    stopwords = ['el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas', 'y', 'o',
+                 'a', 'ante', 'con', 'de', 'desde', 'en', 'para', 'por', 'sin',
+                 'sobre', 'quiero', 'necesito', 'agregar', 'añadir', 'comprar', 'mi']
+
+    palabras = texto.split()
+    palabras_significativas = [p for p in palabras if len(p) > 2 and p not in stopwords]
+
     productos_detectados = []
 
     for producto in productos_backend:
         nombre_producto = producto['name'].lower()
+        coincidencias = sum(1 for p in palabras_significativas if p in nombre_producto)
 
-
-        if all(palabra in nombre_producto for palabra in palabras_filtradas):
-            cantidad = extraer_cantidad(texto) or 1
+        if coincidencias > 0:
+            cantidad = extraer_cantidad(texto)
             productos_detectados.append({
                 "product": producto['id'],
                 "quantity": cantidad,
