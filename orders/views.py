@@ -1,5 +1,4 @@
 from decimal import Decimal
-
 import stripe
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
@@ -16,7 +15,8 @@ from .serializers import OrderSerializer, OrderItemSerializer, CartSerializer, C
 from stripe.error import StripeError
 from django.core.mail import EmailMessage
 from .utils import generate_invoice_pdf
-
+from .speech_processing import detectar_productos_en_texto
+from products.models import Product
 
 class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
@@ -212,3 +212,61 @@ class StripeWebhookView(APIView):
                 return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response(status=status.HTTP_200_OK)
+
+
+class VoiceCartProcessingView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        texto = request.data.get('texto')
+
+        if not texto:
+            return Response(
+                {"error": "El texto de voz es obligatorio"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Obtener todos los productos activos
+        productos = Product.objects.filter(is_active=True, is_available=True)
+        productos_formateados = [
+            {"id": p.id, "name": p.name.lower()} for p in productos
+        ]
+
+        # Detectar productos en el texto
+        items_detectados = detectar_productos_en_texto(texto, productos_formateados)
+
+        if not items_detectados:
+            return Response(
+                {"message": "No se detectaron productos en el texto"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Obtener o crear el carrito del usuario
+        cart, created = Cart.objects.get_or_create(user=request.user)
+
+        # Agregar items al carrito
+        added_items = []
+        for item in items_detectados:
+            product = Product.objects.get(id=item['product'])
+            cart_item, created = CartItem.objects.get_or_create(
+                cart=cart,
+                product=product,
+                defaults={'quantity': item['quantity']}
+            )
+
+            # Si el item ya existía, actualiza la cantidad
+            if not created:
+                cart_item.quantity += item['quantity']
+                cart_item.save()
+
+            added_items.append({
+                'product': product.name,
+                'quantity': item['quantity']
+            })
+
+        return Response({
+            "message": "Productos agregados al carrito exitosamente",
+            "added_items": added_items,
+            "cart_total": cart.total_price
+        }, status=status.HTTP_200_OK)

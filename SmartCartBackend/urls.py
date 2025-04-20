@@ -4,7 +4,8 @@ from rest_framework import routers
 from users.views import RolViewSet, UsuarioViewSet, CustomPasswordResetView, LogoutView, PasswordResetConfirmView, \
     RegisterClienteView, RegisterDeliveryView, UserProfileView
 from products.views import ProductViewSet
-from orders.views import OrderViewSet, OrderItemViewSet, CartViewSet, CartItemViewSet, CheckoutView, StripeWebhookView
+from orders.views import OrderViewSet, OrderItemViewSet, CartViewSet, CartItemViewSet, CheckoutView, StripeWebhookView, \
+    VoiceCartProcessingView
 from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
@@ -53,10 +54,11 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('api/products/', include('products.urls')),
     path('api/me/', UserProfileView.as_view(), name='user_profile'),
+
+    path('api/voice-to-cart/', VoiceCartProcessingView.as_view(), name='voice-to-cart'),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-
 
 urlpatterns += [
     path('.well-known/assetlinks.json',
