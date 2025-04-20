@@ -227,13 +227,13 @@ class VoiceCartProcessingView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Obtener todos los productos activos
+
         productos = Product.objects.filter(is_active=True, is_available=True)
         productos_formateados = [
             {"id": p.id, "name": p.name.lower()} for p in productos
         ]
 
-        # Detectar productos en el texto
+        #
         items_detectados = detectar_productos_en_texto(texto, productos_formateados)
 
         if not items_detectados:
@@ -242,10 +242,10 @@ class VoiceCartProcessingView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # Obtener o crear el carrito del usuario
+
         cart, created = Cart.objects.get_or_create(user=request.user)
 
-        # Agregar items al carrito
+
         added_items = []
         for item in items_detectados:
             product = Product.objects.get(id=item['product'])
@@ -255,7 +255,7 @@ class VoiceCartProcessingView(APIView):
                 defaults={'quantity': item['quantity']}
             )
 
-            # Si el item ya existía, actualiza la cantidad
+
             if not created:
                 cart_item.quantity += item['quantity']
                 cart_item.save()

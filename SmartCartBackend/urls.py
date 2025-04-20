@@ -54,7 +54,6 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('api/products/', include('products.urls')),
     path('api/me/', UserProfileView.as_view(), name='user_profile'),
-
     path('api/voice-to-cart/', VoiceCartProcessingView.as_view(), name='voice-to-cart'),
 ]
 

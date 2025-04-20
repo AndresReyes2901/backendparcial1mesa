@@ -8,7 +8,7 @@ def singularizar_palabra(palabra):
     return palabra
 
 def extraer_cantidad(texto):
-    # Busca números directamente en el texto
+
     match = re.search(r'\d+', texto)
     if match:
         return int(match.group())
@@ -39,7 +39,7 @@ def detectar_productos_en_texto(texto, productos_backend):
 
     for producto in productos_backend:
         nombre_producto = producto['name'].lower()
-        # Busca cualquier palabra del texto en el nombre del producto
+
         if any(palabra in nombre_producto for palabra in palabras):
             cantidad = extraer_cantidad(texto) or 1
             productos_detectados.append({
