@@ -129,7 +129,7 @@ class CheckoutView(APIView):
                 payment_method_types=['card'],
                 line_items=line_items,
                 mode='payment',
-                success_url='https://backenddjango-production-c48c.up.railway.app/payment-success',
+                success_url='http://localhost:5173/Sucess',
                 cancel_url='https://backenddjango-production-c48c.up.railway.app/payment-cancel',
                 metadata={"user_id": request.user.id}
             )
