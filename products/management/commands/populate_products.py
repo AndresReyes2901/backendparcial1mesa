@@ -21,7 +21,7 @@ class Command(BaseCommand):
             self.stderr.write(self.style.ERROR(f'❌ No pude leer el JSON: {e}'))
             return
 
-        # 1) Crear o actualizar productos
+
         for rec in records:
             defaults = {
                 'description': rec.get('description', ''),
@@ -38,7 +38,7 @@ class Command(BaseCommand):
             action = '✅ Creado' if created else '🔄 Actualizado'
             self.stdout.write(f'{action} → {obj.name} (ID: {obj.pk})')
 
-        # 2) Asignar productos relacionados por ID
+
         for rec in records:
             related_ids = rec.get('related_ids', [])
             if not related_ids:
