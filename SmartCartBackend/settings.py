@@ -163,7 +163,8 @@ STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 
 CORS_ALLOWED_ORIGINS = [
-    "https://pos-frontend-production-fd0d.up.railway.app"
+    "https://pos-frontend-production-fd0d.up.railway.app",
+    "https://clever-cart-craft-production.up.railway.app",
 ]
 CORS_ALLOW_METHODS = [
     "DELETE",
