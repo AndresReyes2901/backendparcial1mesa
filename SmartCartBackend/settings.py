@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-mo-5uqfxx6_=9=h-p0r)uqbds(*27b9i!qb=sew&%szo0rvr%m
 
 # SECURITY WARNING: don't run with debug turned on in production!
 #cambiar el debug a False en produccion
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -38,7 +38,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:8000",
-    "https://web-production-0328.up.railway.app"
+    "https://*.railway.app"
 ]
 
 # Application definition
@@ -174,6 +174,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://pos-frontend-production-fd0d.up.railway.app",
     "https://clever-cart-craft-production.up.railway.app",
     "http://localhost:5173",
+    "https://*.railway.app"
 ]
 CORS_ALLOW_METHODS = [
     "DELETE",
