@@ -27,11 +27,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-mo-5uqfxx6_=9=h-p0r)uqbds(*27b9i!qb=sew&%szo0rvr%m'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+#cambiar el debug a False en produccion
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-CSRF_TRUSTED_ORIGINS = ['https://backenddjango-production-c48c.up.railway.app']
+#CSRF_TRUSTED_ORIGINS = ['https://backenddjango-production-c48c.up.railway.app']
+#CSRF_TRUSTED_ORIGINS = ["http://localhost:5173"]
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:8000",
+]
 
 # Application definition
 
@@ -165,6 +171,7 @@ STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 CORS_ALLOWED_ORIGINS = [
     "https://pos-frontend-production-fd0d.up.railway.app",
     "https://clever-cart-craft-production.up.railway.app",
+    "http://localhost:5173",
 ]
 CORS_ALLOW_METHODS = [
     "DELETE",

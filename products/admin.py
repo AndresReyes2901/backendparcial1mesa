@@ -13,11 +13,15 @@ class LowStockFilter(admin.SimpleListFilter):
     def queryset(self, request, queryset):
         if self.value() == 'yes':
             return queryset.filter(stock__lt=5)
-
+        #aumentar el queryset para incluir productos con stock mayor o igual a 5
+        elif self.value() is None:
+            return queryset.filter(stock__gte=5)
+        else:   
+            return queryset
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'price', 'highlight_stock', 'is_active', 'created_at')
+    list_display = ('id', 'name', 'price', 'highlight_stock', 'is_active', 'created_at','img_preview')
     search_fields = ('name',)
     list_filter = ('is_active', 'created_at', LowStockFilter)
     ordering = ('-created_at',)
@@ -27,7 +31,7 @@ class ProductAdmin(admin.ModelAdmin):
 
     fieldsets = (
         (None, {
-            'fields': ('name', 'description', 'price', 'stock', 'is_active')
+            'fields': ('name', 'description', 'price', 'stock', 'is_active','img_url')
         }),
         ('Descuentos', {
             'fields': ('has_discount', 'discount_percentage')
@@ -47,3 +51,10 @@ class ProductAdmin(admin.ModelAdmin):
         return format_html('<span style="color: {};">{}</span>', color, obj.stock)
 
     highlight_stock.short_description = 'Stock'
+
+    def img_preview(self, obj):
+        if obj.img_url:
+            return format_html('<img src="{}" style="height: 50px;"/>', obj.img_url)
+        return "(No image)"
+    img_preview.short_description = 'Imagen'
+    img_preview.allow_tags = True

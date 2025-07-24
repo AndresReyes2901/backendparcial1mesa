@@ -10,7 +10,7 @@ from .models import Product
 @receiver(post_save, sender=Product)
 def notify_low_stock(sender,instance, **kwargs):
     if instance.stock < 5:
-        admins = Usuario.objects.filter(rol=1,is_active=True)
+        admins = Usuario.objects.filter(rol=3,is_active=True)
         recipient_list=[admin.correo for admin in admins if admin.correo]
 
         if recipient_list:

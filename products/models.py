@@ -12,7 +12,8 @@ class Product(models.Model):
 
     has_discount = models.BooleanField(default=False)
     discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-
+    # Optional image URL for the product
+    img_url = models.URLField(max_length=500, blank=True, null=True)
 
     related_products = models.ManyToManyField('self', blank=True, symmetrical=False,
                                               related_name='recommended_for')

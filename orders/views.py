@@ -17,6 +17,7 @@ from django.core.mail import EmailMessage
 from .utils import generate_invoice_pdf
 from .speech_processing import detectar_productos_en_texto
 from products.models import Product
+from django.db import transaction
 
 class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
@@ -56,20 +57,25 @@ class OrderViewSet(viewsets.ModelViewSet):
 
 class OrderItemViewSet(viewsets.ModelViewSet):
     serializer_class = OrderItemSerializer
-    permission_classes = [IsOwnerOrAdminOrAssignedDelivery]
+    permission_classes = [IsAuthenticated]
+    
+    def list(self, request, *args, **kwargs):
+        static_data = [
+            {"id": 1, "order": 1001, "product": 55, "quantity": 2},
+            {"id": 2, "order": 1002, "product": 61, "quantity": 1},
+        ]
+        return Response(static_data)
 
-    def get_queryset(self):
-        if getattr(self, 'swagger_fake_view', False):
-            return Order.objects.none()
-        user = self.request.user
-        if user.is_staff or user.is_superuser:
-            return OrderItem.objects.all()
-        elif hasattr(user, 'rol') and user.rol.nombre.lower() == 'delivery':
-            return OrderItem.objects.filter(order__delivery_user=user)
-        else:
-            return OrderItem.objects.filter(order__client=user)
+class StaticOrderItemView(APIView):
+    permission_classes = [IsAuthenticated]
 
-
+    def get(self, request):
+        static_data = [
+            {"id": 1, "order": 1001, "product": 55, "quantity": 2},
+            {"id": 2, "order": 1002, "product": 61, "quantity": 1},
+        ]
+        return Response(static_data)
+        
 class CartViewSet(viewsets.ModelViewSet):
     serializer_class = CartSerializer
     permission_classes = [IsCartOwner]
@@ -129,8 +135,11 @@ class CheckoutView(APIView):
                 payment_method_types=['card'],
                 line_items=line_items,
                 mode='payment',
-                success_url='https://pos-frontend-production-fd0d.up.railway.app/Sucess',
-                cancel_url='https://backenddjango-production-c48c.up.railway.app/payment-cancel',
+                #cambiar al localhost
+                #success_url='https://pos-frontend-production-fd0d.up.railway.app/Sucess',
+                #cancel_url='https://backenddjango-production-c48c.up.railway.app/payment-cancel',
+                success_url='http://localhost:5173/success',  # ruta del frontend en desarrollo
+                cancel_url='http://localhost:5173/payment-cancel',    # ruta opcional para cancelar
                 metadata={"user_id": request.user.id}
             )
             return Response({'checkout_url': session.url})
@@ -149,6 +158,7 @@ class StripeWebhookView(APIView):
         endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
 
         try:
+            #verificacion de la firma de stripe
             event = stripe.Webhook.construct_event(
                 payload, sig_header, endpoint_secret
             )
@@ -166,45 +176,61 @@ class StripeWebhookView(APIView):
                 cart = Cart.objects.get(user_id=user_id)
 
                 if not cart.items.exists():
+                    print(f"[ERROR] El carrito del usuario {user_id} está vacío.")
                     return Response({'error': 'Carrito vacío.'}, status=status.HTTP_400_BAD_REQUEST)
+                #print(f"Cart encontrado para user_id={user_id}, contiene {cart.items.count()} items.")
 
-                order = Order.objects.create(
-                    client=cart.user,
-                    status='paid'
-                )
-                total_price = Decimal('0')
-                for item in cart.items.all():
-                    OrderItem.objects.create(
+                with transaction.atomic():
+                    try:
+                        order = Order.objects.create(
+                            client=cart.user,
+                            status='paid'
+                        )
+                        print(f"[INFO] Orden creada exitosamente con ID {order.id} para usuario {user_id}")
+                    except Exception as order_error:
+                        print(f"[ERROR] Falló la creación de la orden para usuario {user_id}: {order_error}")
+                        return Response({'error': f'Error al crear la orden: {str(order_error)}'}, status=500)
+
+                    total_price = Decimal('0')
+                    for item in cart.items.all():
+                        OrderItem.objects.create(
+                            order=order,
+                            product=item.product,
+                            quantity=item.quantity
+                        )
+
+                        product = item.product
+                        product.stock -= item.quantity
+                        product.save()
+
+                        price = item.product.final_price
+                        subtotal = price * item.quantity
+                        total_price += subtotal
+                
+                    order.total_price = total_price
+                    order.save()
+
+                    cart.delete()
+                    #ultimo agregado
+                    # Crear un historial de la orden (es importante hacer esto)
+                    OrderStatusHistory.objects.create(
                         order=order,
-                        product=item.product,
-                        quantity=item.quantity
+                        previous_status='created',  # O el estado que corresponda
+                        new_status='paid'
                     )
+                    #ultimo agregado
+                    pdf_buffer = generate_invoice_pdf(order)
 
-                    product = item.product
-                    product.stock -= item.quantity
-                    product.save()
+                    email = EmailMessage(
+                        subject=f"Tu recibo de compra - Orden #{order.id}",
+                        body="Gracias por tu compra. Adjunto encontrarás tu recibo en PDF.",
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        to=[order.client.correo],
+                    ) #aqui la cague, quite el {order.id}
+                    email.attach(f"recibo_orden_{order.id}.pdf", pdf_buffer.read(), "application/pdf")
+                    email.send()
 
-                    price = item.product.final_price
-                    subtotal = price * item.quantity
-                    total_price += subtotal
-
-                order.total_price = total_price
-                order.save()
-
-                cart.delete()
-
-                pdf_buffer = generate_invoice_pdf(order)
-
-                email = EmailMessage(
-                    subject=f"Tu recibo de compra - Orden #{order.id}",
-                    body="Gracias por tu compra. Adjunto encontrarás tu recibo en PDF.",
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    to=[order.client.correo],
-                ) #aqui la cague, quite el {order.id}
-                email.attach(f"recibo_orden_{order.id}.pdf", pdf_buffer.read(), "application/pdf")
-                email.send()
-
-                print(f"Pago exitoso para usuario {user_id}, orden {order.id} creada y carrito eliminado.")
+                    print(f"Pago exitoso para usuario {user_id}, orden {order.id} creada y carrito eliminado.")
 
             except Cart.DoesNotExist:
                 return Response({'error': 'Carrito no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
